@@ -1,0 +1,22 @@
+# ОС
+.DS_Store
+Thumbs.db
+
+# IDE / редакторы
+.vscode/
+.idea/
+*.suo
+*.swp
+
+# Python / Ansible / Terraform
+__pycache__/
+*.py[co]
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Логи, временные файлы
+*.log
+*.tmp
+logs/
