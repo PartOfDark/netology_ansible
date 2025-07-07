@@ -54,12 +54,9 @@ variable "default_cidr" {
 
 
 
-variable "vm_family_list" {
-  type = list(string)
-  default = [
-    #"ubuntu-2004-lts",
-    "rocky-9-oslogin",
-  ]
+variable "vm_family" {
+  type    = string
+  default = "rocky-9-oslogin"
 }
 
 variable "ssh_public_key" {

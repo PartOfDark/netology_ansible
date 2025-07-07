@@ -1,0 +1,170 @@
+---
+- name: Setup ClickHouse YUM repository
+  hosts: clickhouse
+  gather_facts: false
+
+  pre_tasks:
+    - name: grant passwordless sudo for user
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/{{ ansible_user }}
+        content: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL"
+        owner: root
+        group: root
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      become: true
+
+  tasks:
+  - name: Deploy official ClickHouse repo file
+    get_url:
+      url: https://packages.clickhouse.com/rpm/clickhouse.repo
+      dest: /etc/yum.repos.d/clickhouse.repo
+      mode: '0644'
+    become: true
+
+  - name: Refresh yum cache
+    yum:
+      update_cache: yes
+    become: true
+
+
+- name: Install & bootstrap ClickHouse
+  hosts: clickhouse
+  become: true
+
+  tasks:
+    - name: Install ClickHouse server & client
+      yum:
+        name:
+          - clickhouse-server
+          - clickhouse-client
+        state: present
+      notify: Restart ClickHouse
+
+    - name: Start ClickHouse service
+      service:
+        name: clickhouse-server
+        state: started
+        enabled: yes
+
+    - name: Create `logs` database if not exists
+      ansible.builtin.shell: clickhouse-client -q "CREATE DATABASE IF NOT EXISTS logs"
+      register: create_db
+      changed_when: create_db.rc == 0
+
+
+  handlers:
+    - name: Restart ClickHouse
+      service:
+        name: clickhouse-server
+        state: restarted
+        enabled: yes
+
+- name: Setup vector
+  hosts: vector
+  gather_facts: false
+  
+  tasks:
+    - name: Install vector
+      ansible.builtin.get_url:
+        url: https://packages.timber.io/vector/0.48.0/vector-0.48.0-1.x86_64.rpm
+        dest: /tmp/vector-0.48.0-1.x86_64.rpm
+        mode: '0644'
+      become: true
+
+    - name: Install vector package
+      ansible.builtin.yum:
+        name: /tmp/vector-0.48.0-1.x86_64.rpm
+        state: present
+        disable_gpg_check: yes
+      become: true
+
+    - name: Start vector service
+      ansible.builtin.service:
+        name: vector
+
+        state: started
+        enabled: yes
+      become: true
+
+    - name: Delete default vector config if required
+      ansible.builtin.file:
+        path: /etc/vector/vector.yaml
+        state: absent
+      when: vector_remove_default_config | default(false)
+      become: true
+
+    - name: Configure vector
+      ansible.builtin.template:
+        src: group_vars/clickhouse/vector.yml
+        dest: /etc/vector/vector.yml
+        mode: '0644'
+      become: true
+      notify: Restart vector
+
+  handlers:
+    - name: Restart vector
+      ansible.builtin.service:
+        name: vector
+        state: restarted
+      become: true
+
+- name: install nginx
+  hosts: lighthouse
+  gather_facts: false
+  tasks:
+    - name: Ensure EPEL repository is installed
+      ansible.builtin.yum:
+        name: epel-release
+        state: present
+      become: true
+    - name: Install Nginx
+      ansible.builtin.yum:
+        name: nginx
+        state: present
+      become: true
+    - name: Start Nginx service
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+      become: true
+  handlers:
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+      become: true
+
+
+- name: Setup Lighthouse
+  hosts: lighthouse
+  gather_facts: false
+  pre_tasks:
+    - name: install git 
+      ansible.builtin.yum:
+        name: git
+        state: present
+      become: true
+  tasks:
+    - name: Clone Lighthouse repository
+      ansible.builtin.git:
+        repo: https://github.com/VKCOM/lighthouse.git
+        dest: /usr/share/nginx/html/lighthouse
+        version: master
+        force: yes
+      become: true
+      notify: Restart Nginx
+    - name: configure nginx for Lighthouse
+      ansible.builtin.template:
+        src: group_vars/clickhouse/lighthouse.conf.j2
+        dest: /etc/nginx/conf.d/lighthouse.conf
+        mode: '0644'
+      become: true
+      notify: Restart Nginx
+  handlers:
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+      become: true
