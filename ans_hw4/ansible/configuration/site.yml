@@ -1,0 +1,16 @@
+---
+- hosts: clickhouse
+  gather_facts: true
+  roles:
+    - clickhouse
+
+- hosts: vector
+  gather_facts: false
+  roles:
+    - vector-role
+
+- hosts: lighthouse
+  gather_facts: false
+  roles:
+    - nginx-role
+    - lighthouse-role

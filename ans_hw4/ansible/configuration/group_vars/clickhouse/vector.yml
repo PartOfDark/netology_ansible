@@ -1,0 +1,22 @@
+---
+vector_config:
+  sources:
+    sample_file:
+      type: file
+      read_from: beginning
+      ignore_older_secs: 600
+      include: ["/var/log/clickhouse-server/clickhouse-server.log"]
+
+  sinks:
+    clickhouse_sink:
+      type: clickhouse
+      inputs: ["sample_file"]
+      endpoints:
+      databases:
+      table:
+      auth:
+        strategy: "basic"
+        user:
+        password:
+      skip_unknown_fields: true
+      compression: gzip

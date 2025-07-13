@@ -1,0 +1,15 @@
+---
+- name: clone git repository to directory
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: ensure dir exitst
+    file:
+      path: "roles"
+      state: directory
+
+  - name: clone git repo
+    git:
+      repo: 'git@github.com:PartOfDark/netology_ansible_roles.git'
+      dest: "roles"
+      force: yes
