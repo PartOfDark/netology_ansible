@@ -1,0 +1,6 @@
+{
+    "ANSIBLE_MODULE_ARGS": {
+        "file_path": "/home/rick/projects/netology_ansible/ans_hw6/allgood.txt",
+        "context": "Still good"
+    }
+}

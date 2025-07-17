@@ -1,0 +1,9 @@
+---
+- name: Test module
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Write context to file
+      my_own_module:
+        file_path: "/home/rick/projects/netology_ansible/ans_hw6/allgood.txt"
+        context: "Still good 2"
