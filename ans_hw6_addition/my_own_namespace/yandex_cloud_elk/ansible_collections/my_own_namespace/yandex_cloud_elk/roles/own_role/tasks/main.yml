@@ -1,0 +1,5 @@
+---
+- name: Just simple task for my own module
+  my_own_module:
+    file_path: "/tmp/file.txt"
+    context: "my own context"
